@@ -19,10 +19,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TickerUpdateer {
 
-    public final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
-    public final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
-    public final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
-    public Map<String, CurrencyPair> pricePairHashMap;
+    private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
+    private final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
+    private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
+    private Map<String, CurrencyPair> pricePairHashMap;
 
     public TickerUpdateer(Map<String, CurrencyPair> pricePairHashMap) {
         this.pricePairHashMap = pricePairHashMap;
@@ -41,7 +41,7 @@ public class TickerUpdateer {
     }
 
 
-    public void startTickerListener() {
+    private void startTickerListener() {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         AtomicReference<Closeable> atomicReference = new AtomicReference<>();
         service.scheduleAtFixedRate(() -> {
@@ -57,10 +57,13 @@ public class TickerUpdateer {
                     webSocketClient.onAllMarketTickersEvent(response -> {
                         for (AllMarketTickersEvent allMarketTickersEvent : response) {
                             String symbol = allMarketTickersEvent.getSymbol();
-                            pricePairHashMap.get(symbol).hightPrice = new BigDecimal(allMarketTickersEvent.getHighPrice());
-                            pricePairHashMap.get(symbol).lowPrice = new BigDecimal(allMarketTickersEvent.getLowPrice());
-                            pricePairHashMap.get(symbol).askPrice = new BigDecimal(allMarketTickersEvent.getBestAskPrice());
-                            pricePairHashMap.get(symbol).bidPrice = new BigDecimal(allMarketTickersEvent.getBestBidPrice());
+                            CurrencyPair currencyPair = pricePairHashMap.get(symbol);
+                            if (currencyPair != null) {
+                                currencyPair.hightPrice = new BigDecimal(allMarketTickersEvent.getHighPrice());
+                                currencyPair.lowPrice = new BigDecimal(allMarketTickersEvent.getLowPrice());
+                                currencyPair.askPrice = new BigDecimal(allMarketTickersEvent.getBestAskPrice());
+                                currencyPair.bidPrice = new BigDecimal(allMarketTickersEvent.getBestBidPrice());
+                            }
                         }
                     }));
         }, 0, 10, TimeUnit.MINUTES);

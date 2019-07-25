@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public class ConfigIndexParams {
     private static Boolean volumeIndexActivity = true;
     private static Boolean positionIndexActivity = true;
-    private static Boolean askBidDifferenceIndexActivity = false;
+    private static Boolean askBidDifferenceIndexActivity = true;
     private static BigDecimal volumeIndexLimitPercent = new BigDecimal("1.2");
 
     public static BigDecimal getVolumeIndexLimitPercent() {
