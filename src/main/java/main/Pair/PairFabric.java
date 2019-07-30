@@ -4,7 +4,6 @@ import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.general.SymbolInfo;
 import main.Listeners.DepthCacheUpdateer;
 import main.Listeners.OrderListUpdateer;
-import main.Listeners.PriceUpdateer;
 import main.Listeners.TickerUpdateer;
 
 import java.util.List;
@@ -13,8 +12,8 @@ import java.util.stream.Collectors;
 
 public class PairFabric {
 
-    Map<String, CurrencyPair> pricePairHashMap;
-    BinanceApiWebSocketClient binanceApiWebSocketClient;
+    private Map<String, CurrencyPair> pricePairHashMap;
+    private BinanceApiWebSocketClient binanceApiWebSocketClient;
 
     public PairFabric(List<SymbolInfo> symbolInfoList, BinanceApiWebSocketClient binanceApiWebSocketClient) {
 
@@ -26,7 +25,6 @@ public class PairFabric {
 
 
     public Map<String, CurrencyPair> getCurrencyPairList() {
-        addPriceListener();
         addOrderBookListener();
         addOrderListener();
         addTickerListener();
@@ -34,19 +32,16 @@ public class PairFabric {
         return pricePairHashMap;
     }
 
-    public void addPriceListener() {
-        pricePairHashMap.forEach(PriceUpdateer::new);
-    }
 
-    public void addOrderBookListener() {
+    private void addOrderBookListener() {
         pricePairHashMap.forEach(DepthCacheUpdateer::new);
     }
 
-    public void addOrderListener() {
+    private void addOrderListener() {
         new OrderListUpdateer(pricePairHashMap);
     }
 
-    public void addTickerListener() {
+    private void addTickerListener() {
         new TickerUpdateer(pricePairHashMap);
     }
 

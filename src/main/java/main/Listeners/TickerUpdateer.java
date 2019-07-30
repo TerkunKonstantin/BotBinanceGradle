@@ -3,18 +3,22 @@ package main.Listeners;
 import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiWebSocketClient;
+import com.binance.api.client.domain.OrderSide;
+import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.event.AllMarketTickersEvent;
 import main.Config;
 import main.Pair.CurrencyPair;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 
 public class TickerUpdateer {
@@ -29,6 +33,7 @@ public class TickerUpdateer {
         pricePairHashMap.forEach((k, v) ->
                 asyncRestClient.get24HrPriceStatistics(k, response ->
                         {
+                            v.price = new BigDecimal(response.getLastPrice());
                             v.askPrice = new BigDecimal(response.getAskPrice());
                             v.bidPrice = new BigDecimal(response.getBidPrice());
                             v.lowPrice = new BigDecimal(response.getLowPrice());
@@ -59,10 +64,21 @@ public class TickerUpdateer {
                             String symbol = allMarketTickersEvent.getSymbol();
                             CurrencyPair currencyPair = pricePairHashMap.get(symbol);
                             if (currencyPair != null) {
+                                currencyPair.price = new BigDecimal(allMarketTickersEvent.getCurrentDaysClosePrice());
                                 currencyPair.hightPrice = new BigDecimal(allMarketTickersEvent.getHighPrice());
                                 currencyPair.lowPrice = new BigDecimal(allMarketTickersEvent.getLowPrice());
                                 currencyPair.askPrice = new BigDecimal(allMarketTickersEvent.getBestAskPrice());
                                 currencyPair.bidPrice = new BigDecimal(allMarketTickersEvent.getBestBidPrice());
+
+
+                                List<Order> buyList = currencyPair.orderList
+                                        .stream()
+                                        .filter(e -> e.getSide() == OrderSide.BUY)
+                                        .collect(Collectors.toList());
+                                if (!buyList.isEmpty())
+                                currencyPair.checkOrderList(buyList);
+
+
                             }
                         }
                     }));

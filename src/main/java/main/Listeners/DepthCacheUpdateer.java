@@ -1,11 +1,14 @@
 package main.Listeners;
 
+import com.binance.api.client.domain.OrderSide;
+import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.market.OrderBookEntry;
 import main.Pair.CurrencyPair;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DepthCacheUpdateer extends AbstractStreamUpdateer {
     private long lastUpdateId;
@@ -26,7 +29,7 @@ public class DepthCacheUpdateer extends AbstractStreamUpdateer {
             currencyPair.depthCache = new HashMap<>();
             this.lastUpdateId = orderBook.getLastUpdateId();
 
-            NavigableMap<BigDecimal, BigDecimal> asks = new TreeMap<>(Comparator.reverseOrder());
+            NavigableMap<BigDecimal, BigDecimal> asks = new TreeMap<>();
             for (OrderBookEntry ask : orderBook.getAsks()) {
                 asks.put(new BigDecimal(ask.getPrice()), new BigDecimal(ask.getQty()));
             }
@@ -52,6 +55,14 @@ public class DepthCacheUpdateer extends AbstractStreamUpdateer {
                 updateOrderBook(currencyPair.depthCache.get(ASKS), response.getAsks());
                 updateOrderBook(currencyPair.depthCache.get(BIDS), response.getBids());
 
+
+                List<Order> buyList = currencyPair.orderList
+                        .stream()
+                        .filter(e -> e.getSide() == OrderSide.BUY)
+                        .collect(Collectors.toList());
+                if (!buyList.isEmpty())
+                currencyPair.checkOrderList(buyList);
+
             }
         });
 
@@ -69,11 +80,11 @@ public class DepthCacheUpdateer extends AbstractStreamUpdateer {
         }
     }
 
-    public NavigableMap<BigDecimal, BigDecimal> getAsks() {
+    private NavigableMap<BigDecimal, BigDecimal> getAsks() {
         return depthCache.get(ASKS);
     }
 
-    public NavigableMap<BigDecimal, BigDecimal> getBids() {
+    private NavigableMap<BigDecimal, BigDecimal> getBids() {
         return depthCache.get(BIDS);
     }
 }
