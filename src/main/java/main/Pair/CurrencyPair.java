@@ -14,9 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.stream.Collectors;
 
 public class CurrencyPair {
 
+    private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
+    private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
     public Map<String, NavigableMap<BigDecimal, BigDecimal>> depthCache;
     public SymbolInfo symbolInfo;
     public BigDecimal price = new BigDecimal("0");
@@ -26,12 +29,10 @@ public class CurrencyPair {
     public BigDecimal askPrice = new BigDecimal("0");
     public BigDecimal bidPrice = new BigDecimal("0");
     double rank = 1.0;
+    private double rankForOrder = 1.0;
     private double volumeIndex;
     private double askBidDifferenceIndex;
     private double positionIndex;
-    private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
-    private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
-
 
 
     public CurrencyPair(SymbolInfo symbolInfoPair) {
@@ -43,23 +44,20 @@ public class CurrencyPair {
      * Чем ниже, тем индекс ближе к 1
      * Чем выше, тем индекс ближе к 0
      */
-    private void calculatePositionIndex() {
-        if (rank <= 0) return;
+    private double calculatePositionIndex() {
         BigDecimal high = hightPrice;
         BigDecimal low = lowPrice;
         BigDecimal last = price;
         double positionIndexPair = high.subtract(last).divide(high.subtract(low), BigDecimal.ROUND_HALF_EVEN).doubleValue();
-        rank = rank * positionIndexPair;
         positionIndex = positionIndexPair;
-
+        return positionIndexPair;
     }
 
     /**
      * Расчет индекса разницы цены на покупку и продажу.
      * Чем больше процент разницы, тем выше индекс
      */
-    private void calculateAskBidDifferenceIndex() {
-        if (rank <= 0) return;
+    private double calculateAskBidDifferenceIndex() {
         BigDecimal ask = askPrice;
         BigDecimal bid = bidPrice;
         BigDecimal stepPriceSize = new BigDecimal(symbolInfo.getFilters().get(0).getMinPrice());
@@ -69,26 +67,25 @@ public class CurrencyPair {
         bid = bid.add(step);
         BigDecimal askBidDifferenceIndexBD = ask.divide(bid, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).subtract(new BigDecimal("100"));
         askBidDifferenceIndex = askBidDifferenceIndexBD.doubleValue();
-        rank = rank * askBidDifferenceIndex;
-    }
+        return askBidDifferenceIndexBD.doubleValue();
+   }
 
     /**
      * Расчет индекса объема ордеров в стаканах.
      * Чем больше у нас объем ордеров на покупку, тем выше индекс
      */
-    private void calculateVolumeIndex() {
-        if (rank <= 0) return;
+    private double calculateVolumeIndex() {
 
         BigDecimal sumOriginalAmountAsk = getSumAsk(ConfigIndexParams.getVolumeIndexLimitPercent());
         BigDecimal sumOriginalAmountBid = getSumBid(ConfigIndexParams.getVolumeIndexLimitPercent());
 
         if (sumOriginalAmountAsk.compareTo(BigDecimal.ZERO) > 0) {
             double volumeIndexPair = sumOriginalAmountBid.divide(sumOriginalAmountAsk, 1, RoundingMode.HALF_UP).doubleValue();
-            rank *= volumeIndexPair;
             volumeIndex = volumeIndexPair;
+            return volumeIndexPair;
         } else {
-            rank = 0;
             volumeIndex = 0;
+            return 0;
         }
     }
 
@@ -96,28 +93,56 @@ public class CurrencyPair {
     /**
      * Расчет ранга для пары
      */
-     void calculateRang() {
+    synchronized void calculateRang() {
+        rank = 1.0;
+
         if (ConfigIndexParams.getVolumeIndexActivity())
-            calculateVolumeIndex();
-        if (ConfigIndexParams.getAskBidDifferenceIndexActivity())
-            calculateAskBidDifferenceIndex();
-        if (ConfigIndexParams.getPositionIndexActivity())
-            calculatePositionIndex();
+            rank *= calculateVolumeIndex();
+        if (ConfigIndexParams.getAskBidDifferenceIndexActivity() && rank >0 )
+            rank *= calculateAskBidDifferenceIndex();
+        if (ConfigIndexParams.getPositionIndexActivity() && rank >0)
+            rank *= calculatePositionIndex();
+        //TODO индекс доминирования биткоина - хочу тянуть https://coinmarketcap.com/charts/#dominance-percentage (хорошая штука) и считать его движение вверх/вниз
+
+    }
+
+
+    /**
+     * Расчет ранга для пары
+     */
+    synchronized void calculateRangForOrderControl() {
+        rankForOrder = 1.0;
+
+        if (ConfigIndexParams.getVolumeIndexActivity())
+            rankForOrder *= calculateVolumeIndex();
+        if (ConfigIndexParams.getAskBidDifferenceIndexActivity() && rankForOrder >0 )
+            rankForOrder *= calculateAskBidDifferenceIndex();
+        if (ConfigIndexParams.getPositionIndexActivity() && rankForOrder >0)
+            rankForOrder *= calculatePositionIndex();
         //TODO индекс доминирования биткоина - хочу тянуть https://coinmarketcap.com/charts/#dominance-percentage (хорошая штука) и считать его движение вверх/вниз
 
     }
 
 
     private BigDecimal getSumAsk(BigDecimal percent) {
+
         BigDecimal lim = BigDecimal.ONE
                 .add(percent.movePointLeft(2))
                 .multiply(askPrice);
 
-        return depthCache.get("ASKS").entrySet()
+        List<BigDecimal> listAsk = depthCache.get("ASKS").entrySet()
                 .stream()
-                .filter(entry -> entry.getKey().compareTo(lim) > 0)
+                .filter(entry -> entry.getKey().compareTo(lim) < 0)
                 .map(Map.Entry::getValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .collect(Collectors.toList());
+
+        BigDecimal askSum = BigDecimal.ZERO;
+
+        for (BigDecimal ask : listAsk) {
+            askSum = askSum.add(ask);
+        }
+
+        return askSum;
     }
 
     private BigDecimal getSumBid(BigDecimal percent) {
@@ -125,11 +150,19 @@ public class CurrencyPair {
                 .subtract(percent.movePointLeft(2))
                 .multiply(bidPrice);
 
-        return depthCache.get("BIDS").entrySet()
+        List<BigDecimal> listBid = depthCache.get("BIDS").entrySet()
                 .stream()
-                .filter(entry -> entry.getKey().compareTo(lim) < 0)
+                .filter(entry -> entry.getKey().compareTo(lim) > 0)
                 .map(Map.Entry::getValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .collect(Collectors.toList());
+
+        BigDecimal bidSum = BigDecimal.ZERO;
+
+        for (BigDecimal bid : listBid) {
+            bidSum = bidSum.add(bid);
+        }
+
+        return bidSum;
     }
 
 
@@ -140,17 +173,18 @@ public class CurrencyPair {
                 .subtract(BigDecimal.ONE)
                 .movePointRight(2);
     }
-    boolean isCorrectForSale(){
+
+    boolean isCorrectForSale() {
         return orderList.isEmpty() && rank > Config.getMinRankForBid()
                 && getStepPercent().compareTo(Config.getMaxLostProfitFromOrderStep()) < 0;
     }
 
 
-    public void checkOrderList(List<Order> buyList){
+    public void checkOrderList(List<Order> buyList) {
         calculateRang();
-        if(rank < Config.getMinRankForBid()){
+        if (rankForOrder < Config.getMinRankForBid()) {
             buyList.forEach(order -> asyncRestClient.cancelOrder(
-                    new CancelOrderRequest(symbolInfo.getSymbol(), order.getOrderId()), e-> System.out.println()));
+                    new CancelOrderRequest(symbolInfo.getSymbol(), order.getOrderId()), e -> System.out.println()));
         }
 
     }

@@ -26,11 +26,12 @@ public class AccountBalanceUpdateer {
     private final BinanceApiRestClient apiRestClient;
     private final BinanceApiWebSocketClient apiWebSocketClient;
     private final BinanceApiAsyncRestClient apiAsyncRestClient;
+
     /**
      * Listen key used to interact with the user data streaming API.
      */
     private final String listenKey;
-    Map<String, CurrencyPair> pairMap;
+    private Map<String, CurrencyPair> pairMap;
     /**
      * Key is the symbol, and the value is the balance of that symbol on the account.
      */
@@ -115,7 +116,7 @@ public class AccountBalanceUpdateer {
             List<Trade> myTrades = apiRestClient.getMyTrades(currencyPair.symbolInfo.getSymbol());
             Collections.reverse(myTrades);
             for (Trade trade : myTrades) {
-                if (trade.isBuyer() == true) {
+                if (trade.isBuyer()) {
 
                     BigDecimal tradePrice = new BigDecimal(trade.getPrice());
                     BigDecimal salePrice = Config.getProfitForSale().multiply(tradePrice.scaleByPowerOfTen(-2)).add(new BigDecimal(trade.getPrice()));
@@ -128,7 +129,7 @@ public class AccountBalanceUpdateer {
                     BigDecimal pairQuantity = pairBalance.setScale(scaleBalance, BigDecimal.ROUND_DOWN);
 
                     apiAsyncRestClient.newOrder(limitSell(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, pairQuantity.toString(), salePrice.toString()),
-                            response -> System.out.println(response));
+                            System.out::println);
                     break;
                 }
             }
@@ -149,8 +150,7 @@ public class AccountBalanceUpdateer {
         String freeBTC = assetBalance.getFree();
         BigDecimal BTC = new BigDecimal(freeBTC);
         BigDecimal minRate = Config.getMinRate();
-        int orderBuyCount = BTC.divide(minRate, BigDecimal.ROUND_DOWN).intValue();
-        return orderBuyCount;
+        return BTC.divide(minRate, BigDecimal.ROUND_DOWN).intValue();
     }
 
 

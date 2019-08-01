@@ -39,27 +39,28 @@ public class RangPairs {
             int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
             orderBuyCount = 3;
             if (orderBuyCount > 0) {
-                System.out.println("Пора считать ранги");
-                pairMap.values().forEach(CurrencyPair::calculateRang);
-                List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
-                currencyPairList.sort(Comparator.comparingDouble(pair -> pair.rank));
-                Collections.reverse(currencyPairList);
+                try {
+                    System.out.println("Пора считать ранги");
+                    pairMap.values().forEach(CurrencyPair::calculateRang);
+                    List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
+                    currencyPairList.sort(Comparator.comparingDouble(pair -> pair.rank));
+                    Collections.reverse(currencyPairList);
 
-                for (CurrencyPair currencyPair : currencyPairList) {
-                    if (currencyPair.isCorrectForSale() && orderBuyCount > 0) {
-                        System.out.println("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: "+ currencyPair.rank);
-                        //asyncRestClient.newOrder(prepareLimitOrder(currencyPair), (a) -> System.out.println(a));
-                        orderBuyCount--;
-                        currencyPair.rank = 1.0;
-                    } else {
-                        currencyPair.rank = 1.0;
+                    for (CurrencyPair currencyPair : currencyPairList) {
+                        if (currencyPair.isCorrectForSale() && orderBuyCount > 0) {
+                            System.out.println("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
+                            //asyncRestClient.newOrder(prepareLimitOrder(currencyPair), (a) -> System.out.println(a));
+                            orderBuyCount--;
+                        }
                     }
+                }catch (Exception e){
+                    e.printStackTrace();
                 }
             } else {
                 System.out.println("А тут и торговать то не чем");
             }
 
-        }, 0, 10, TimeUnit.SECONDS);
+        }, 30, 10, TimeUnit.SECONDS);
 
     }
 

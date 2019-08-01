@@ -15,16 +15,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractStreamUpdateer {
-    public static final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
 
-    public final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
-    public final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
+    private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
+    final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
     public final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
+    final BinanceApiRestClient apiRestClient = factory.newRestClient();
 
 
-    public CurrencyPair currencyPair;
+    CurrencyPair currencyPair;
 
-    public AbstractStreamUpdateer(String symbol, CurrencyPair currencyPair) {
+    AbstractStreamUpdateer(String symbol, CurrencyPair currencyPair) {
         this.currencyPair = currencyPair;
         init(symbol);
 
