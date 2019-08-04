@@ -2,8 +2,10 @@ package main.Pair;
 
 import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiClientFactory;
+import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.TimeInForce;
 import com.binance.api.client.domain.account.NewOrder;
+import com.binance.api.client.domain.account.NewOrderResponse;
 import main.Config;
 import main.Listeners.AccountBalanceUpdateer;
 
@@ -22,6 +24,7 @@ public class RangPairs {
     private AccountBalanceUpdateer accountBalanceUpdateer;
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
     private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
+    private BinanceApiRestClient binanceApiRestClient = factory.newRestClient();
 
 
 
@@ -37,7 +40,7 @@ public class RangPairs {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(() -> {
             int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
-            orderBuyCount = 3;
+          //  orderBuyCount = 0;
             if (orderBuyCount > 0) {
                 try {
                     System.out.println("Пора считать ранги");
@@ -49,29 +52,30 @@ public class RangPairs {
                     for (CurrencyPair currencyPair : currencyPairList) {
                         if (currencyPair.isCorrectForSale() && orderBuyCount > 0) {
                             System.out.println("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
-                            //asyncRestClient.newOrder(prepareLimitOrder(currencyPair), (a) -> System.out.println(a));
+                           /* asyncRestClient.newOrder(prepareLimitOrder(currencyPair),
+                                    (a) -> System.out.println(a));*/
+                            NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(prepareLimitOrder(currencyPair));
+                            System.out.println(newOrderResponse);
                             orderBuyCount--;
                         }
                     }
                 }catch (Exception e){
                     e.printStackTrace();
                 }
-            } else {
-                System.out.println("А тут и торговать то не чем");
             }
 
         }, 30, 10, TimeUnit.SECONDS);
 
     }
 
-    NewOrder prepareLimitOrder(CurrencyPair currencyPair) {
+    private NewOrder prepareLimitOrder(CurrencyPair currencyPair) {
 
         BigDecimal stepPriceSize = new BigDecimal(currencyPair.symbolInfo.getFilters().get(0).getMinPrice());
         BigDecimal priceForBuy = currencyPair.bidPrice.add(stepPriceSize);
         BigDecimal stepBalanceSize = new BigDecimal(currencyPair.symbolInfo.getFilters().get(2).getStepSize());
         int scaleBalance = stepBalanceSize.stripTrailingZeros().scale();
         BigDecimal amount = Config.getMinRate().divide(priceForBuy, scaleBalance, BigDecimal.ROUND_DOWN);
-        return limitBuy(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, amount.toString(), priceForBuy.toString());
+        return limitBuy(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, amount.toPlainString(), priceForBuy.toPlainString());
 
     }
 

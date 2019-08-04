@@ -110,7 +110,7 @@ public class CurrencyPair {
     /**
      * Расчет ранга для пары
      */
-    synchronized void calculateRangForOrderControl() {
+    private synchronized void calculateRangForOrderControl() {
         rankForOrder = 1.0;
 
         if (ConfigIndexParams.getVolumeIndexActivity())
@@ -181,10 +181,13 @@ public class CurrencyPair {
 
 
     public void checkOrderList(List<Order> buyList) {
-        calculateRang();
+        calculateRangForOrderControl();
         if (rankForOrder < Config.getMinRankForBid()) {
+            System.out.println("Rank for CANCEL order = " + rankForOrder  + "  " + symbolInfo.getSymbol());
             buyList.forEach(order -> asyncRestClient.cancelOrder(
                     new CancelOrderRequest(symbolInfo.getSymbol(), order.getOrderId()), e -> System.out.println()));
+        } else{
+            System.out.println("Rank for order = " + rankForOrder + "  " + symbolInfo.getSymbol());
         }
 
     }

@@ -57,7 +57,6 @@ public class DepthCacheUpdateer extends AbstractStreamUpdateer {
                 updateOrderBook(currencyPair.depthCache.get(ASKS), response.getAsks());
                 updateOrderBook(currencyPair.depthCache.get(BIDS), response.getBids());
 
-
                 List<Order> buyList = currencyPair.orderList
                         .stream()
                         .filter(e -> e.getSide() == OrderSide.BUY)

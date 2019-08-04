@@ -27,18 +27,16 @@ public class OrderListUpdateer {
 
     //TODO прокинул сокеты и фабрики вручную, Надо прокинуть красивее (возможно)
 
-    public final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
-    public final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
-    public final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
-    public final BinanceApiRestClient apiRestClient = factory.newRestClient();
-    public Map<String, CurrencyPair> pricePairHashMap;
+    private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
+    private final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
+    private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
+    private final BinanceApiRestClient apiRestClient = factory.newRestClient();
+    private Map<String, CurrencyPair> pricePairHashMap;
 
     public OrderListUpdateer(Map<String, CurrencyPair> pricePairHashMap) {
         this.pricePairHashMap = pricePairHashMap;
         pricePairHashMap.forEach((k, v) ->
-                asyncRestClient.getOpenOrders(new OrderRequest(k), response -> {
-                    v.orderList = response;
-                })
+                asyncRestClient.getOpenOrders(new OrderRequest(k), response -> v.orderList = response)
         );
 
         startOrderListener();
@@ -46,7 +44,7 @@ public class OrderListUpdateer {
     }
 
 
-    public void startOrderListener() {
+    private void startOrderListener() {
 
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         AtomicReference<Closeable> atomicReference = new AtomicReference<>();
@@ -61,25 +59,29 @@ public class OrderListUpdateer {
             }
             atomicReference.set(
                     webSocketClient.onUserDataUpdateEvent(apiRestClient.startUserDataStream(), response -> {
-                        if (response.getEventType() == ORDER_TRADE_UPDATE) {
-                            List<Order> orderListForDelete = new ArrayList<>();
-                            OrderTradeUpdateEvent orderTradeUpdateEvent = response.getOrderTradeUpdateEvent();
-                            Order newOrder = createOrder(orderTradeUpdateEvent);
-                            CurrencyPair currencyPair = pricePairHashMap.get(orderTradeUpdateEvent.getSymbol());
+                        try {
+                            if (response.getEventType() == ORDER_TRADE_UPDATE) {
+                                List<Order> orderListForDelete = new ArrayList<>();
+                                OrderTradeUpdateEvent orderTradeUpdateEvent = response.getOrderTradeUpdateEvent();
+                                Order newOrder = createOrder(orderTradeUpdateEvent);
+                                CurrencyPair currencyPair = pricePairHashMap.get(orderTradeUpdateEvent.getSymbol());
 
 
-                            if (orderTradeUpdateEvent.getOrderStatus().toString().equals("CANCELED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("REJECTED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("FILLED")) {
-                                for (Order order : currencyPair.orderList) {
-                                    if (order.getOrderId().equals(newOrder.getOrderId())) {
-                                        // TODO реализовать удаление ордера нормально, не хочу формировать список, а после уже его удалять из списка оредров пары
-                                        orderListForDelete.add(order);
+                                if (orderTradeUpdateEvent.getOrderStatus().toString().equals("CANCELED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("REJECTED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("FILLED")) {
+                                    for (Order order : currencyPair.orderList) {
+                                        if (order.getOrderId().equals(newOrder.getOrderId())) {
+                                            // TODO реализовать удаление ордера нормально, не хочу формировать список, а после уже его удалять из списка оредров пары
+                                            orderListForDelete.add(order);
+                                        }
                                     }
-                                }
-                                currencyPair.orderList.removeAll(orderListForDelete);
-                            } else
-                                currencyPair.orderList.add(newOrder);
+                                    currencyPair.orderList.removeAll(orderListForDelete);
+                                } else
+                                    currencyPair.orderList.add(newOrder);
 
-                            currencyPair.orderList.forEach(System.out::println);
+
+                            }
+                        } catch (Exception e){
+                            e.printStackTrace();
                         }
                     }));
         }, 0, 10, TimeUnit.MINUTES);
@@ -93,6 +95,7 @@ public class OrderListUpdateer {
         newOrder.setOrderId(orderTradeUpdateEvent.getOrderId());
         newOrder.setSymbol(orderTradeUpdateEvent.getSymbol());
         newOrder.setStatus(orderTradeUpdateEvent.getOrderStatus());
+        newOrder.setSide(orderTradeUpdateEvent.getSide());
         return newOrder;
     }
 }

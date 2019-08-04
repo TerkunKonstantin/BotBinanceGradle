@@ -128,7 +128,7 @@ public class AccountBalanceUpdateer {
                     int scaleBalance = stepBalanceSize.stripTrailingZeros().scale();
                     BigDecimal pairQuantity = pairBalance.setScale(scaleBalance, BigDecimal.ROUND_DOWN);
 
-                    apiAsyncRestClient.newOrder(limitSell(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, pairQuantity.toString(), salePrice.toString()),
+                    apiAsyncRestClient.newOrder(limitSell(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, pairQuantity.toPlainString(), salePrice.toPlainString()),
                             System.out::println);
                     break;
                 }

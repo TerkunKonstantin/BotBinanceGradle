@@ -51,6 +51,8 @@ public class Main {
         // Обект хранит и слушает баланс + выполняет продажи с профитом при изменениях баланса
         AccountBalanceUpdateer accountBalanceUpdateer = new AccountBalanceUpdateer(binanceApiRestClient, binanceApiWebSocketClient, apiAsyncRestClient, pairMap);
 
+        System.out.println("Инициализация завершена, можно приступать к работе");
+
         //TODO если будет таймаут до этого места, то надо бы стартануть логику заново, наверное
         RangPairs rangPairs = new RangPairs(pairMap, accountBalanceUpdateer);
 
