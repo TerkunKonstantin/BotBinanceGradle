@@ -10,6 +10,7 @@ import com.binance.api.client.domain.account.request.OrderRequest;
 import com.binance.api.client.domain.event.OrderTradeUpdateEvent;
 import main.Config;
 import main.Pair.CurrencyPair;
+import org.apache.log4j.Logger;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class OrderListUpdateer {
 
     //TODO прокинул сокеты и фабрики вручную, Надо прокинуть красивее (возможно)
 
+    private static final Logger log = Logger.getLogger(OrderListUpdateer.class);
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
     private final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
     private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
@@ -81,6 +83,7 @@ public class OrderListUpdateer {
 
                             }
                         } catch (Exception e){
+                            log.error(e.getStackTrace());
                             e.printStackTrace();
                         }
                     }));

@@ -8,7 +8,9 @@ import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.Trade;
 import main.Config;
+import main.Main;
 import main.Pair.CurrencyPair;
+import org.apache.log4j.Logger;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
@@ -22,6 +24,8 @@ import static com.binance.api.client.domain.account.NewOrder.limitSell;
 import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUpdateEventType.ACCOUNT_UPDATE;
 
 public class AccountBalanceUpdateer {
+
+    private static final Logger log = Logger.getLogger(AccountBalanceUpdateer.class);
 
     private final BinanceApiRestClient apiRestClient;
     private final BinanceApiWebSocketClient apiWebSocketClient;
@@ -111,6 +115,7 @@ public class AccountBalanceUpdateer {
         BigDecimal assetBalanceFree = new BigDecimal(assetBalance.getFree());
         assetBalanceFree = assetBalanceFree.multiply(currencyPair.price);
         if (assetBalanceFree.compareTo(Config.getMinSaleBalance()) >= 0) {
+            log.info("AccountBalanceUpdateer " + currencyPair);
             System.out.println("AccountBalanceUpdateer " + currencyPair);
             // TODO сделать реализацию обновлени€ списка трейдов по всем монетам стримами - увеличим быстродействие. ¬ списке можно будет хранить только последнюю покупку.
             List<Trade> myTrades = apiRestClient.getMyTrades(currencyPair.symbolInfo.getSymbol());

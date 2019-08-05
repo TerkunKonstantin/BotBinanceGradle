@@ -8,6 +8,7 @@ import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.event.AllMarketTickersEvent;
 import main.Config;
 import main.Pair.CurrencyPair;
+import org.apache.log4j.Logger;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 public class TickerUpdateer {
 
+    private static final Logger log = Logger.getLogger(TickerUpdateer.class);
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
     private final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
     private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
@@ -82,6 +84,7 @@ public class TickerUpdateer {
                                 }
                             }
                         }catch(Exception e){
+                            log.error(e.getStackTrace());
                             e.printStackTrace();
                         }
                     }));

@@ -8,24 +8,23 @@ import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import main.Config;
 import main.Listeners.AccountBalanceUpdateer;
+import org.apache.log4j.Logger;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 
 public class RangPairs {
 
-    private Map<String, CurrencyPair> pairMap;
-    private AccountBalanceUpdateer accountBalanceUpdateer;
+    private static final Logger log = Logger.getLogger(RangPairs.class);
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
-    private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
+     private Map<String, CurrencyPair> pairMap;
+    private AccountBalanceUpdateer accountBalanceUpdateer;
     private BinanceApiRestClient binanceApiRestClient = factory.newRestClient();
-
 
 
     public RangPairs(Map<String, CurrencyPair> pairMap, AccountBalanceUpdateer accountBalanceUpdateer) {
@@ -40,10 +39,11 @@ public class RangPairs {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(() -> {
             int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
-          //  orderBuyCount = 0;
+            //  orderBuyCount = 0;
             if (orderBuyCount > 0) {
                 try {
                     System.out.println("Пора считать ранги");
+                    log.info("Пора считать ранги");
                     pairMap.values().forEach(CurrencyPair::calculateRang);
                     List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
                     currencyPairList.sort(Comparator.comparingDouble(pair -> pair.rank));
@@ -51,15 +51,15 @@ public class RangPairs {
 
                     for (CurrencyPair currencyPair : currencyPairList) {
                         if (currencyPair.isCorrectForSale() && orderBuyCount > 0) {
+                            log.info("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
                             System.out.println("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
-                           /* asyncRestClient.newOrder(prepareLimitOrder(currencyPair),
-                                    (a) -> System.out.println(a));*/
                             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(prepareLimitOrder(currencyPair));
                             System.out.println(newOrderResponse);
                             orderBuyCount--;
                         }
                     }
-                }catch (Exception e){
+                } catch (Exception e) {
+                    log.error(e.getStackTrace());
                     e.printStackTrace();
                 }
             }
@@ -78,7 +78,6 @@ public class RangPairs {
         return limitBuy(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, amount.toPlainString(), priceForBuy.toPlainString());
 
     }
-
 
 
 }

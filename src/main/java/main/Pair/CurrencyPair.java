@@ -7,6 +7,7 @@ import com.binance.api.client.domain.account.request.CancelOrderRequest;
 import com.binance.api.client.domain.general.SymbolInfo;
 import main.Config;
 import main.ConfigIndexParams;
+import org.apache.log4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 public class CurrencyPair {
 
+    private static final Logger log = Logger.getLogger(CurrencyPair.class);
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
     private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
     public Map<String, NavigableMap<BigDecimal, BigDecimal>> depthCache;
@@ -35,7 +37,7 @@ public class CurrencyPair {
     private double positionIndex;
 
 
-    public CurrencyPair(SymbolInfo symbolInfoPair) {
+    CurrencyPair(SymbolInfo symbolInfoPair) {
         symbolInfo = symbolInfoPair;
     }
 
@@ -68,7 +70,7 @@ public class CurrencyPair {
         BigDecimal askBidDifferenceIndexBD = ask.divide(bid, RoundingMode.HALF_UP).multiply(new BigDecimal("100")).subtract(new BigDecimal("100"));
         askBidDifferenceIndex = askBidDifferenceIndexBD.doubleValue();
         return askBidDifferenceIndexBD.doubleValue();
-   }
+    }
 
     /**
      * Расчет индекса объема ордеров в стаканах.
@@ -98,9 +100,9 @@ public class CurrencyPair {
 
         if (ConfigIndexParams.getVolumeIndexActivity())
             rank *= calculateVolumeIndex();
-        if (ConfigIndexParams.getAskBidDifferenceIndexActivity() && rank >0 )
+        if (ConfigIndexParams.getAskBidDifferenceIndexActivity() && rank > 0)
             rank *= calculateAskBidDifferenceIndex();
-        if (ConfigIndexParams.getPositionIndexActivity() && rank >0)
+        if (ConfigIndexParams.getPositionIndexActivity() && rank > 0)
             rank *= calculatePositionIndex();
         //TODO индекс доминирования биткоина - хочу тянуть https://coinmarketcap.com/charts/#dominance-percentage (хорошая штука) и считать его движение вверх/вниз
 
@@ -115,9 +117,9 @@ public class CurrencyPair {
 
         if (ConfigIndexParams.getVolumeIndexActivity())
             rankForOrder *= calculateVolumeIndex();
-        if (ConfigIndexParams.getAskBidDifferenceIndexActivity() && rankForOrder >0 )
+        if (ConfigIndexParams.getAskBidDifferenceIndexActivity() && rankForOrder > 0)
             rankForOrder *= calculateAskBidDifferenceIndex();
-        if (ConfigIndexParams.getPositionIndexActivity() && rankForOrder >0)
+        if (ConfigIndexParams.getPositionIndexActivity() && rankForOrder > 0)
             rankForOrder *= calculatePositionIndex();
         //TODO индекс доминирования биткоина - хочу тянуть https://coinmarketcap.com/charts/#dominance-percentage (хорошая штука) и считать его движение вверх/вниз
 
@@ -183,10 +185,17 @@ public class CurrencyPair {
     public void checkOrderList(List<Order> buyList) {
         calculateRangForOrderControl();
         if (rankForOrder < Config.getMinRankForBid()) {
-            System.out.println("Rank for CANCEL order = " + rankForOrder  + "  " + symbolInfo.getSymbol());
+            log.info("Rank for CANCEL order = " + rankForOrder + "  " + symbolInfo.getSymbol());
+            System.out.println("Rank for CANCEL order = " + rankForOrder + "  " + symbolInfo.getSymbol());
             buyList.forEach(order -> asyncRestClient.cancelOrder(
-                    new CancelOrderRequest(symbolInfo.getSymbol(), order.getOrderId()), e -> System.out.println()));
-        } else{
+                    new CancelOrderRequest(symbolInfo.getSymbol(), order.getOrderId()), e ->
+                    {
+                        log.info(e);
+                        System.out.println(e);
+                    }
+            ));
+        } else {
+            log.info("Rank for order = " + rankForOrder + "  " + symbolInfo.getSymbol());
             System.out.println("Rank for order = " + rankForOrder + "  " + symbolInfo.getSymbol());
         }
 

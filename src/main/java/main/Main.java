@@ -1,17 +1,16 @@
 package main;
 
-
 import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolInfo;
-import com.binance.api.client.domain.market.TickerStatistics;
 import main.Listeners.AccountBalanceUpdateer;
 import main.Pair.CurrencyPair;
 import main.Pair.PairFabric;
 import main.Pair.RangPairs;
+import org.apache.log4j.Logger;
 
 import java.util.List;
 import java.util.Map;
@@ -22,8 +21,11 @@ import java.util.stream.Collectors;
  */
 public class Main {
 
+    private static final Logger log = Logger.getLogger(Main.class);
+
     public static void main(String[] args) {
 
+        log.info("–абота начата");
         System.out.println("–абота начата");
 
         BinanceApiClientFactory binanceApiClientFactory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
@@ -47,19 +49,16 @@ public class Main {
         Map<String, CurrencyPair> pairMap = pairFabric.getCurrencyPairList();
 
 
-
         // ќбект хранит и слушает баланс + выполн€ет продажи с профитом при изменени€х баланса
         AccountBalanceUpdateer accountBalanceUpdateer = new AccountBalanceUpdateer(binanceApiRestClient, binanceApiWebSocketClient, apiAsyncRestClient, pairMap);
 
+        log.info("»нициализаци€ завершена, можно приступать к работе");
         System.out.println("»нициализаци€ завершена, можно приступать к работе");
 
         //TODO если будет таймаут до этого места, то надо бы стартануть логику заново, наверное
         RangPairs rangPairs = new RangPairs(pairMap, accountBalanceUpdateer);
 
         rangPairs.startTrade();
-
-
-
 
 
     }

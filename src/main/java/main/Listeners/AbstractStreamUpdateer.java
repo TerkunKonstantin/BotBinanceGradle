@@ -33,7 +33,7 @@ public abstract class AbstractStreamUpdateer {
         service.scheduleAtFixedRate(() -> {
             try {
                 Closeable webSocket = atomicReference.get();
-                if (Objects.nonNull(webSocket)){
+                if (Objects.nonNull(webSocket)) {
                     webSocket.close();
                 }
             } catch (Exception e) {
