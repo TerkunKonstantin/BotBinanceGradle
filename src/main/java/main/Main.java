@@ -26,7 +26,6 @@ public class Main {
     public static void main(String[] args) {
 
         log.info("–абота начата");
-        System.out.println("–абота начата");
 
         BinanceApiClientFactory binanceApiClientFactory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
         BinanceApiRestClient binanceApiRestClient = binanceApiClientFactory.newRestClient();
@@ -53,7 +52,6 @@ public class Main {
         AccountBalanceUpdateer accountBalanceUpdateer = new AccountBalanceUpdateer(binanceApiRestClient, binanceApiWebSocketClient, apiAsyncRestClient, pairMap);
 
         log.info("»нициализаци€ завершена, можно приступать к работе");
-        System.out.println("»нициализаци€ завершена, можно приступать к работе");
 
         //TODO если будет таймаут до этого места, то надо бы стартануть логику заново, наверное
         RangPairs rangPairs = new RangPairs(pairMap, accountBalanceUpdateer);

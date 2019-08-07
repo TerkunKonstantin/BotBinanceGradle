@@ -186,7 +186,6 @@ public class CurrencyPair {
         calculateRangForOrderControl();
         if (rankForOrder < Config.getMinRankForBid()) {
             log.info("Rank for CANCEL order = " + rankForOrder + "  " + symbolInfo.getSymbol());
-            System.out.println("Rank for CANCEL order = " + rankForOrder + "  " + symbolInfo.getSymbol());
             buyList.forEach(order -> asyncRestClient.cancelOrder(
                     new CancelOrderRequest(symbolInfo.getSymbol(), order.getOrderId()), e ->
                     {
@@ -195,8 +194,7 @@ public class CurrencyPair {
                     }
             ));
         } else {
-            log.info("Rank for order = " + rankForOrder + "  " + symbolInfo.getSymbol());
-            System.out.println("Rank for order = " + rankForOrder + "  " + symbolInfo.getSymbol());
+            log.debug("Rank for order = " + rankForOrder + "  " + symbolInfo.getSymbol());
         }
 
     }

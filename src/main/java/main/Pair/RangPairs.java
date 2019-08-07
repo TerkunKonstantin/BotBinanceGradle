@@ -1,6 +1,5 @@
 package main.Pair;
 
-import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.domain.TimeInForce;
@@ -22,7 +21,7 @@ public class RangPairs {
 
     private static final Logger log = Logger.getLogger(RangPairs.class);
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
-     private Map<String, CurrencyPair> pairMap;
+    private Map<String, CurrencyPair> pairMap;
     private AccountBalanceUpdateer accountBalanceUpdateer;
     private BinanceApiRestClient binanceApiRestClient = factory.newRestClient();
 
@@ -39,10 +38,8 @@ public class RangPairs {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(() -> {
             int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
-            //  orderBuyCount = 0;
             if (orderBuyCount > 0) {
                 try {
-                    System.out.println("Пора считать ранги");
                     log.info("Пора считать ранги");
                     pairMap.values().forEach(CurrencyPair::calculateRang);
                     List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
@@ -52,9 +49,8 @@ public class RangPairs {
                     for (CurrencyPair currencyPair : currencyPairList) {
                         if (currencyPair.isCorrectForSale() && orderBuyCount > 0) {
                             log.info("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
-                            System.out.println("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
                             NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(prepareLimitOrder(currencyPair));
-                            System.out.println(newOrderResponse);
+                            log.info(newOrderResponse);
                             orderBuyCount--;
                         }
                     }

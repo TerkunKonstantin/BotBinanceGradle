@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 public class TickerUpdateer {
 
     private static final Logger log = Logger.getLogger(TickerUpdateer.class);
+
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
     private final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
     private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();

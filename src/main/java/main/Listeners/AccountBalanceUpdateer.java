@@ -116,7 +116,6 @@ public class AccountBalanceUpdateer {
         assetBalanceFree = assetBalanceFree.multiply(currencyPair.price);
         if (assetBalanceFree.compareTo(Config.getMinSaleBalance()) >= 0) {
             log.info("AccountBalanceUpdateer " + currencyPair);
-            System.out.println("AccountBalanceUpdateer " + currencyPair);
             // TODO сделать реализацию обновлени€ списка трейдов по всем монетам стримами - увеличим быстродействие. ¬ списке можно будет хранить только последнюю покупку.
             List<Trade> myTrades = apiRestClient.getMyTrades(currencyPair.symbolInfo.getSymbol());
             Collections.reverse(myTrades);
@@ -134,7 +133,7 @@ public class AccountBalanceUpdateer {
                     BigDecimal pairQuantity = pairBalance.setScale(scaleBalance, BigDecimal.ROUND_DOWN);
 
                     apiAsyncRestClient.newOrder(limitSell(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, pairQuantity.toPlainString(), salePrice.toPlainString()),
-                            System.out::println);
+                            log::info);
                     break;
                 }
             }
