@@ -9,7 +9,7 @@ import com.binance.api.client.domain.general.SymbolInfo;
 import main.Listeners.AccountBalanceUpdateer;
 import main.Pair.CurrencyPair;
 import main.Pair.PairFabric;
-import main.Pair.RangPairs;
+import main.Pair.TradeStarter;
 import org.apache.log4j.Logger;
 
 import java.util.List;
@@ -54,9 +54,9 @@ public class Main {
         log.info("Инициализация завершена, можно приступать к работе");
 
         //TODO если будет таймаут до этого места, то надо бы стартануть логику заново, наверное
-        RangPairs rangPairs = new RangPairs(pairMap, accountBalanceUpdateer);
+        TradeStarter tradeStarter = new TradeStarter(pairMap, accountBalanceUpdateer);
 
-        rangPairs.startTrade();
+        tradeStarter.startTrade();
 
 
     }

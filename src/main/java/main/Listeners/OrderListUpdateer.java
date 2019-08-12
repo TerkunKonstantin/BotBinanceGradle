@@ -70,12 +70,14 @@ public class OrderListUpdateer {
 
 
                                 if (orderTradeUpdateEvent.getOrderStatus().toString().equals("CANCELED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("REJECTED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("FILLED")) {
+                                    log.info(orderTradeUpdateEvent);
                                     for (Order order : currencyPair.orderList) {
                                         if (order.getOrderId().equals(newOrder.getOrderId())) {
                                             // TODO реализовать удаление ордера нормально, не хочу формировать список, а после уже его удалять из списка оредров пары
                                             orderListForDelete.add(order);
                                         }
                                     }
+
                                     currencyPair.orderList.removeAll(orderListForDelete);
                                 } else
                                     currencyPair.orderList.add(newOrder);

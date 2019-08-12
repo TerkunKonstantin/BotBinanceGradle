@@ -17,16 +17,16 @@ import java.util.concurrent.TimeUnit;
 
 import static com.binance.api.client.domain.account.NewOrder.limitBuy;
 
-public class RangPairs {
+public class TradeStarter {
 
-    private static final Logger log = Logger.getLogger(RangPairs.class);
+    private static final Logger log = Logger.getLogger(TradeStarter.class);
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
     private Map<String, CurrencyPair> pairMap;
     private AccountBalanceUpdateer accountBalanceUpdateer;
     private BinanceApiRestClient binanceApiRestClient = factory.newRestClient();
 
 
-    public RangPairs(Map<String, CurrencyPair> pairMap, AccountBalanceUpdateer accountBalanceUpdateer) {
+    public TradeStarter(Map<String, CurrencyPair> pairMap, AccountBalanceUpdateer accountBalanceUpdateer) {
         this.accountBalanceUpdateer = accountBalanceUpdateer;
         this.pairMap = pairMap;
         //TODO посмотреть зачем я везде таскаю мапу, пары же можно из куренси паир тянуть

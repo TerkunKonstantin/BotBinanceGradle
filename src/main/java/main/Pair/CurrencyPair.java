@@ -176,8 +176,10 @@ public class CurrencyPair {
                 .movePointRight(2);
     }
 
+    // TODO сделать проверку на максимальный процент роста за день (не покупать, если рост более 17%)
+
     boolean isCorrectForSale() {
-        return orderList.isEmpty() && rank > Config.getMinRankForBid()
+        return orderList.isEmpty() & rank > Config.getMinRankForBid()
                 && getStepPercent().compareTo(Config.getMaxLostProfitFromOrderStep()) < 0;
     }
 
