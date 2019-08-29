@@ -47,10 +47,10 @@ public class CurrencyPair {
      * Чем выше, тем индекс ближе к 0
      */
     private double calculatePositionIndex() {
-        BigDecimal high = hightPrice;
-        BigDecimal low = lowPrice;
-        BigDecimal last = price;
-        double positionIndexPair = high.subtract(last).divide(high.subtract(low), BigDecimal.ROUND_HALF_EVEN).doubleValue();
+
+        double positionIndexPair = hightPrice.subtract(price)
+                .divide(hightPrice.subtract(lowPrice), BigDecimal.ROUND_HALF_EVEN)
+                .doubleValue();
         positionIndex = positionIndexPair;
         return positionIndexPair;
     }
@@ -77,18 +77,18 @@ public class CurrencyPair {
      * Чем больше у нас объем ордеров на покупку, тем выше индекс
      */
     private double calculateVolumeIndex() {
-
+        double volumeIndexPair = 0;
+        volumeIndex = 0;
         BigDecimal sumOriginalAmountAsk = getSumAsk(ConfigIndexParams.getVolumeIndexLimitPercent());
         BigDecimal sumOriginalAmountBid = getSumBid(ConfigIndexParams.getVolumeIndexLimitPercent());
 
         if (sumOriginalAmountAsk.compareTo(BigDecimal.ZERO) > 0) {
-            double volumeIndexPair = sumOriginalAmountBid.divide(sumOriginalAmountAsk, 1, RoundingMode.HALF_UP).doubleValue();
+            volumeIndexPair = sumOriginalAmountBid.divide(sumOriginalAmountAsk, 1, RoundingMode.HALF_UP).doubleValue();
             volumeIndex = volumeIndexPair;
             return volumeIndexPair;
-        } else {
-            volumeIndex = 0;
-            return 0;
         }
+
+        return volumeIndexPair;
     }
 
 
@@ -180,7 +180,8 @@ public class CurrencyPair {
 
     boolean isCorrectForSale() {
         return orderList.isEmpty() & rank > Config.getMinRankForBid()
-                && getStepPercent().compareTo(Config.getMaxLostProfitFromOrderStep()) < 0;
+                && getStepPercent().compareTo(Config.getMaxLostProfitFromOrderStep()) < 0
+                && !Config.getLongStoragePair().contains(symbolInfo.getSymbol());
     }
 
 

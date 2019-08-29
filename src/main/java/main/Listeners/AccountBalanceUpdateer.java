@@ -8,7 +8,6 @@ import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.Trade;
 import main.Config;
-import main.Main;
 import main.Pair.CurrencyPair;
 import org.apache.log4j.Logger;
 
@@ -81,7 +80,7 @@ public class AccountBalanceUpdateer {
         service.scheduleAtFixedRate(() -> {
             try {
                 Closeable webSocket = atomicReference.get();
-                if (Objects.nonNull(webSocket)){
+                if (Objects.nonNull(webSocket)) {
                     webSocket.close();
                 }
             } catch (Exception e) {
@@ -90,22 +89,22 @@ public class AccountBalanceUpdateer {
             atomicReference.set(
                     apiWebSocketClient.onUserDataUpdateEvent(listenKey, response -> {
                         if (response.getEventType() == ACCOUNT_UPDATE) {
+                        for (AssetBalance assetBalance : response.getAccountUpdateEvent().getBalances()) {
+                            accountBalanceCache.put(assetBalance.getAsset(), assetBalance);
+                            if(assetBalance.getAsset().equals("BTC"))
+                            log.info(assetBalance.getAsset() + " " + assetBalance);
 
-                            for (AssetBalance assetBalance : response.getAccountUpdateEvent().getBalances()) {
-                                accountBalanceCache.put(assetBalance.getAsset(), assetBalance);
                                 CurrencyPair currencyPair = pairMap.get(assetBalance.getAsset() + "BTC");
                                 if (currencyPair != null)
                                     // TODO тут есть проблема при отмене сразу многих ордеров. ѕриход€т данные об изменниеиии баланса, по каждому ордеру. ѕо списку монет выставл€ю ордера. ј на следущем обновлении баланса по следующему ордеру уже нет балансов. ѕадаем в ошибку. —можем продолжить выставл€ть продажи через 5 минут только. Ќадо бы сделать выставление ордеров из другого места.
                                     if (!Config.getLongStoragePair().contains(currencyPair.symbolInfo.getSymbol())) {
                                         saleCurrency(assetBalance, currencyPair);
-                                  }
+                                    }
                             }
                         }
 
                     }));
         }, 0, 5, TimeUnit.MINUTES);
-
-
 
 
     }
@@ -115,7 +114,7 @@ public class AccountBalanceUpdateer {
         BigDecimal assetBalanceFree = new BigDecimal(assetBalance.getFree());
         assetBalanceFree = assetBalanceFree.multiply(currencyPair.price);
         if (assetBalanceFree.compareTo(Config.getMinSaleBalance()) >= 0) {
-            log.info("AccountBalanceUpdateer " + currencyPair);
+            log.info("AccountBalanceUpdateer " + currencyPair.symbolInfo.getSymbol());
             // TODO сделать реализацию обновлени€ списка трейдов по всем монетам стримами - увеличим быстродействие. ¬ списке можно будет хранить только последнюю покупку.
             List<Trade> myTrades = apiRestClient.getMyTrades(currencyPair.symbolInfo.getSymbol());
             Collections.reverse(myTrades);
@@ -140,23 +139,13 @@ public class AccountBalanceUpdateer {
         }
     }
 
-    /**
-     * @return an account balance cache, containing the balance for every asset in this account.
-     */
-    public Map<String, AssetBalance> getAccountBalanceCache() {
-        return accountBalanceCache;
-    }
-
 
     public int getOrderBuyCount() {
-        String asset = "BTC";
-        AssetBalance assetBalance = accountBalanceCache.get(asset);
-        String freeBTC = assetBalance.getFree();
-        BigDecimal BTC = new BigDecimal(freeBTC);
+
+        BigDecimal BTC = new BigDecimal(accountBalanceCache.get("BTC").getFree());
         BigDecimal minRate = Config.getMinRate();
         return BTC.divide(minRate, BigDecimal.ROUND_DOWN).intValue();
     }
-
 
 
 }
