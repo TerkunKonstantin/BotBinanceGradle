@@ -26,7 +26,7 @@ import static com.binance.api.client.domain.event.UserDataUpdateEvent.UserDataUp
 
 public class OrderListUpdateer {
 
-    //TODO прокинул сокеты и фабрики вручную, Надо прокинуть красивее (возможно)
+    //TODO РїСЂРѕРєРёРЅСѓР» СЃРѕРєРµС‚С‹ Рё С„Р°Р±СЂРёРєРё РІСЂСѓС‡РЅСѓСЋ, РќР°РґРѕ РїСЂРѕРєРёРЅСѓС‚СЊ РєСЂР°СЃРёРІРµРµ (РІРѕР·РјРѕР¶РЅРѕ)
 
     private static final Logger log = Logger.getLogger(OrderListUpdateer.class);
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
@@ -73,7 +73,7 @@ public class OrderListUpdateer {
                                     log.info(orderTradeUpdateEvent);
                                     for (Order order : currencyPair.orderList) {
                                         if (order.getOrderId().equals(newOrder.getOrderId())) {
-                                            // TODO реализовать удаление ордера нормально, не хочу формировать список, а после уже его удалять из списка оредров пары
+                                            // TODO СЂРµР°Р»РёР·РѕРІР°С‚СЊ СѓРґР°Р»РµРЅРёРµ РѕСЂРґРµСЂР° РЅРѕСЂРјР°Р»СЊРЅРѕ, РЅРµ С…РѕС‡Сѓ С„РѕСЂРјРёСЂРѕРІР°С‚СЊ СЃРїРёСЃРѕРє, Р° РїРѕСЃР»Рµ СѓР¶Рµ РµРіРѕ СѓРґР°Р»СЏС‚СЊ РёР· СЃРїРёСЃРєР° РѕСЂРµРґСЂРѕРІ РїР°СЂС‹
                                             orderListForDelete.add(order);
                                         }
                                     }

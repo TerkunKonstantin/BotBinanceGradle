@@ -29,18 +29,18 @@ public class TradeStarter {
     public TradeStarter(Map<String, CurrencyPair> pairMap, AccountBalanceUpdateer accountBalanceUpdateer) {
         this.accountBalanceUpdateer = accountBalanceUpdateer;
         this.pairMap = pairMap;
-        //TODO посмотреть зачем я везде таскаю мапу, пары же можно из куренси паир тянуть
+        //TODO РїРѕСЃРјРѕС‚СЂРµС‚СЊ Р·Р°С‡РµРј СЏ РІРµР·РґРµ С‚Р°СЃРєР°СЋ РјР°РїСѓ, РїР°СЂС‹ Р¶Рµ РјРѕР¶РЅРѕ РёР· РєСѓСЂРµРЅСЃРё РїР°РёСЂ С‚СЏРЅСѓС‚СЊ
 
     }
 
-    // TODO перенести расчет в куренси паир
+    // TODO РїРµСЂРµРЅРµСЃС‚Рё СЂР°СЃС‡РµС‚ РІ РєСѓСЂРµРЅСЃРё РїР°РёСЂ
     public void startTrade() {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(() -> {
             int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
             if (orderBuyCount > 0) {
                 try {
-                    log.info("Пора считать ранги");
+                    log.info("РџРѕСЂР° СЃС‡РёС‚Р°С‚СЊ СЂР°РЅРіРё");
                     pairMap.values().forEach(CurrencyPair::calculateRang);
                     List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
                     currencyPairList.sort(Comparator.comparingDouble(pair -> pair.rank));

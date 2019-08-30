@@ -72,7 +72,7 @@ public class AccountBalanceUpdateer {
     /**
      * Begins streaming of agg trades events.
      */
-    //TODO сделать реализацию через абстрактный класс AbstractStreamUpdateer (пока что не подходят параметры функций и конструктора). Логика продублирована.
+    //TODO СЃРґРµР»Р°С‚СЊ СЂРµР°Р»РёР·Р°С†РёСЋ С‡РµСЂРµР· Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РєР»Р°СЃСЃ AbstractStreamUpdateer (РїРѕРєР° С‡С‚Рѕ РЅРµ РїРѕРґС…РѕРґСЏС‚ РїР°СЂР°РјРµС‚СЂС‹ С„СѓРЅРєС†РёР№ Рё РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР°). Р›РѕРіРёРєР° РїСЂРѕРґСѓР±Р»РёСЂРѕРІР°РЅР°.
     private void startAccountBalanceEventStreaming(String listenKey) {
 
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
@@ -96,7 +96,7 @@ public class AccountBalanceUpdateer {
 
                                 CurrencyPair currencyPair = pairMap.get(assetBalance.getAsset() + "BTC");
                                 if (currencyPair != null)
-                                    // TODO тут есть проблема при отмене сразу многих ордеров. Приходят данные об изменниеиии баланса, по каждому ордеру. По списку монет выставляю ордера. А на следущем обновлении баланса по следующему ордеру уже нет балансов. Падаем в ошибку. Сможем продолжить выставлять продажи через 5 минут только. Надо бы сделать выставление ордеров из другого места.
+                                    // TODO С‚СѓС‚ РµСЃС‚СЊ РїСЂРѕР±Р»РµРјР° РїСЂРё РѕС‚РјРµРЅРµ СЃСЂР°Р·Сѓ РјРЅРѕРіРёС… РѕСЂРґРµСЂРѕРІ. РџСЂРёС…РѕРґСЏС‚ РґР°РЅРЅС‹Рµ РѕР± РёР·РјРµРЅРЅРёРµРёРёРё Р±Р°Р»Р°РЅСЃР°, РїРѕ РєР°Р¶РґРѕРјСѓ РѕСЂРґРµСЂСѓ. РџРѕ СЃРїРёСЃРєСѓ РјРѕРЅРµС‚ РІС‹СЃС‚Р°РІР»СЏСЋ РѕСЂРґРµСЂР°. Рђ РЅР° СЃР»РµРґСѓС‰РµРј РѕР±РЅРѕРІР»РµРЅРёРё Р±Р°Р»Р°РЅСЃР° РїРѕ СЃР»РµРґСѓСЋС‰РµРјСѓ РѕСЂРґРµСЂСѓ СѓР¶Рµ РЅРµС‚ Р±Р°Р»Р°РЅСЃРѕРІ. РџР°РґР°РµРј РІ РѕС€РёР±РєСѓ. РЎРјРѕР¶РµРј РїСЂРѕРґРѕР»Р¶РёС‚СЊ РІС‹СЃС‚Р°РІР»СЏС‚СЊ РїСЂРѕРґР°Р¶Рё С‡РµСЂРµР· 5 РјРёРЅСѓС‚ С‚РѕР»СЊРєРѕ. РќР°РґРѕ Р±С‹ СЃРґРµР»Р°С‚СЊ РІС‹СЃС‚Р°РІР»РµРЅРёРµ РѕСЂРґРµСЂРѕРІ РёР· РґСЂСѓРіРѕРіРѕ РјРµСЃС‚Р°.
                                     if (!Config.getLongStoragePair().contains(currencyPair.symbolInfo.getSymbol())) {
                                         saleCurrency(assetBalance, currencyPair);
                                     }
@@ -115,7 +115,7 @@ public class AccountBalanceUpdateer {
         assetBalanceFree = assetBalanceFree.multiply(currencyPair.price);
         if (assetBalanceFree.compareTo(Config.getMinSaleBalance()) >= 0) {
             log.info("AccountBalanceUpdateer " + currencyPair.symbolInfo.getSymbol());
-            // TODO сделать реализацию обновления списка трейдов по всем монетам стримами - увеличим быстродействие. В списке можно будет хранить только последнюю покупку.
+            // TODO СЃРґРµР»Р°С‚СЊ СЂРµР°Р»РёР·Р°С†РёСЋ РѕР±РЅРѕРІР»РµРЅРёСЏ СЃРїРёСЃРєР° С‚СЂРµР№РґРѕРІ РїРѕ РІСЃРµРј РјРѕРЅРµС‚Р°Рј СЃС‚СЂРёРјР°РјРё - СѓРІРµР»РёС‡РёРј Р±С‹СЃС‚СЂРѕРґРµР№СЃС‚РІРёРµ. Р’ СЃРїРёСЃРєРµ РјРѕР¶РЅРѕ Р±СѓРґРµС‚ С…СЂР°РЅРёС‚СЊ С‚РѕР»СЊРєРѕ РїРѕСЃР»РµРґРЅСЋСЋ РїРѕРєСѓРїРєСѓ.
             List<Trade> myTrades = apiRestClient.getMyTrades(currencyPair.symbolInfo.getSymbol());
             Collections.reverse(myTrades);
             for (Trade trade : myTrades) {

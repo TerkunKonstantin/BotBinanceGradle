@@ -25,7 +25,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        log.info("Работа начата");
+        log.info("Р Р°Р±РѕС‚Р° РЅР°С‡Р°С‚Р°");
 
         BinanceApiClientFactory binanceApiClientFactory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
         BinanceApiRestClient binanceApiRestClient = binanceApiClientFactory.newRestClient();
@@ -33,7 +33,7 @@ public class Main {
         BinanceApiAsyncRestClient apiAsyncRestClient = binanceApiClientFactory.newAsyncRestClient();
 
 
-        // Получаю пары, что торгуются с БТС
+        // РџРѕР»СѓС‡Р°СЋ РїР°СЂС‹, С‡С‚Рѕ С‚РѕСЂРіСѓСЋС‚СЃСЏ СЃ Р‘РўРЎ
         ExchangeInfo exchangeInfo = binanceApiRestClient.getExchangeInfo();
         List<SymbolInfo> symbolInfoList = exchangeInfo.getSymbols();
 
@@ -43,17 +43,17 @@ public class Main {
                 .collect(Collectors.toList());
 
 
-        // Фабрикой создаю для них сущности и сразу подписываю их на изменения цены, объема, оредеров
+        // Р¤Р°Р±СЂРёРєРѕР№ СЃРѕР·РґР°СЋ РґР»СЏ РЅРёС… СЃСѓС‰РЅРѕСЃС‚Рё Рё СЃСЂР°Р·Сѓ РїРѕРґРїРёСЃС‹РІР°СЋ РёС… РЅР° РёР·РјРµРЅРµРЅРёСЏ С†РµРЅС‹, РѕР±СЉРµРјР°, РѕСЂРµРґРµСЂРѕРІ
         PairFabric pairFabric = new PairFabric(symbolInfoListBTC, binanceApiWebSocketClient);
         Map<String, CurrencyPair> pairMap = pairFabric.getCurrencyPairList();
 
 
-        // Обект хранит и слушает баланс + выполняет продажи с профитом при изменениях баланса
+        // РћР±РµРєС‚ С…СЂР°РЅРёС‚ Рё СЃР»СѓС€Р°РµС‚ Р±Р°Р»Р°РЅСЃ + РІС‹РїРѕР»РЅСЏРµС‚ РїСЂРѕРґР°Р¶Рё СЃ РїСЂРѕС„РёС‚РѕРј РїСЂРё РёР·РјРµРЅРµРЅРёСЏС… Р±Р°Р»Р°РЅСЃР°
         AccountBalanceUpdateer accountBalanceUpdateer = new AccountBalanceUpdateer(binanceApiRestClient, binanceApiWebSocketClient, apiAsyncRestClient, pairMap);
 
-        log.info("Инициализация завершена, можно приступать к работе");
+        log.info("РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ Р·Р°РІРµСЂС€РµРЅР°, РјРѕР¶РЅРѕ РїСЂРёСЃС‚СѓРїР°С‚СЊ Рє СЂР°Р±РѕС‚Рµ");
 
-        //TODO если будет таймаут до этого места, то надо бы стартануть логику заново, наверное
+        //TODO РµСЃР»Рё Р±СѓРґРµС‚ С‚Р°Р№РјР°СѓС‚ РґРѕ СЌС‚РѕРіРѕ РјРµСЃС‚Р°, С‚Рѕ РЅР°РґРѕ Р±С‹ СЃС‚Р°СЂС‚Р°РЅСѓС‚СЊ Р»РѕРіРёРєСѓ Р·Р°РЅРѕРІРѕ, РЅР°РІРµСЂРЅРѕРµ
         TradeStarter tradeStarter = new TradeStarter(pairMap, accountBalanceUpdateer);
 
         tradeStarter.startTrade();
