@@ -16,9 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Illustrates how to use the user data event stream to create a local cache for the balance of an account.
- */
+
 public class Main {
 
     private static final Logger log = Logger.getLogger(Main.class);
@@ -51,7 +49,7 @@ public class Main {
         // Обект хранит и слушает баланс + выполняет продажи с профитом при изменениях баланса
         AccountBalanceUpdateer accountBalanceUpdateer = new AccountBalanceUpdateer(binanceApiRestClient, binanceApiWebSocketClient, apiAsyncRestClient, pairMap);
 
-        log.info("Инициализация завершена, можно приступать к работе");
+        log.info("Инициализация баланса, торговых пар и цен завершена, можно приступать к работе");
 
         //TODO если будет таймаут до этого места, то надо бы стартануть логику заново, наверное
         TradeStarter tradeStarter = new TradeStarter(pairMap, accountBalanceUpdateer);

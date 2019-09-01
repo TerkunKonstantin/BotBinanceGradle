@@ -40,7 +40,7 @@ public class TradeStarter {
             int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
             if (orderBuyCount > 0) {
                 try {
-                    log.info("Пора считать ранги");
+                    log.info("Появился свободный баланс, проводится ранжирование пар");
                     pairMap.values().forEach(CurrencyPair::calculateRang);
                     List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
                     currencyPairList.sort(Comparator.comparingDouble(pair -> pair.rank));
