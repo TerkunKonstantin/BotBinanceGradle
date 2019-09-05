@@ -60,6 +60,7 @@ public class TradeStarter {
                 }
             }
 
+
         }, 30, 10, TimeUnit.SECONDS);
 
     }

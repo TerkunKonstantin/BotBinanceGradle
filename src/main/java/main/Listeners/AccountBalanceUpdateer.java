@@ -8,6 +8,7 @@ import com.binance.api.client.domain.account.Account;
 import com.binance.api.client.domain.account.AssetBalance;
 import com.binance.api.client.domain.account.Trade;
 import main.Config;
+import main.DataInitialization;
 import main.Pair.CurrencyPair;
 import org.apache.log4j.Logger;
 
@@ -40,14 +41,15 @@ public class AccountBalanceUpdateer {
      */
     private Map<String, AssetBalance> accountBalanceCache;
 
-    public AccountBalanceUpdateer(BinanceApiRestClient binanceApiRestClient, BinanceApiWebSocketClient binanceApiWebSocketClient, BinanceApiAsyncRestClient apiAsyncRestClient, Map<String, CurrencyPair> pairMap) {
-        this.pairMap = pairMap;
-        this.apiRestClient = binanceApiRestClient;
-        this.apiWebSocketClient = binanceApiWebSocketClient;
-        this.apiAsyncRestClient = apiAsyncRestClient;
+    public AccountBalanceUpdateer(DataInitialization dataInitialization) {
+        this.pairMap = dataInitialization.pairMap;
+        this.apiRestClient = dataInitialization.binanceApiRestClient;
+        this.apiWebSocketClient = dataInitialization.binanceApiWebSocketClient;
+        this.apiAsyncRestClient = dataInitialization.apiAsyncRestClient;
         this.listenKey = initializeAssetBalanceCacheAndStreamSession();
         startAccountBalanceEventStreaming(listenKey);
     }
+
 
     /**
      * Initializes the asset balance cache by using the REST API and starts a new user data streaming session.
@@ -133,6 +135,7 @@ public class AccountBalanceUpdateer {
 
                     apiAsyncRestClient.newOrder(limitSell(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, pairQuantity.toPlainString(), salePrice.toPlainString()),
                             log::info);
+
                     break;
                 }
             }
