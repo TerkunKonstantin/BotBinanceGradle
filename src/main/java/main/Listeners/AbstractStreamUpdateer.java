@@ -1,6 +1,5 @@
 package main.Listeners;
 
-import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.BinanceApiWebSocketClient;
@@ -11,6 +10,7 @@ import java.io.Closeable;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -19,18 +19,17 @@ public abstract class AbstractStreamUpdateer {
 
     private final BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Config.getApiKeyB(), Config.getSecretKeyB());
     final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
-    public final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
     final BinanceApiRestClient apiRestClient = factory.newRestClient();
 
-
     CurrencyPair currencyPair;
+    public ScheduledFuture<?> scheduledFuture;
 
     AbstractStreamUpdateer(String symbol, CurrencyPair currencyPair) {
         this.currencyPair = currencyPair;
         init(symbol);
 
         AtomicReference<Closeable> atomicReference = new AtomicReference<>();
-        service.scheduleAtFixedRate(() -> {
+        scheduledFuture = service.scheduleAtFixedRate(() -> {
             try {
                 Closeable webSocket = atomicReference.get();
                 if (Objects.nonNull(webSocket)) {
@@ -41,6 +40,7 @@ public abstract class AbstractStreamUpdateer {
             }
             atomicReference.set(getCloseable(symbol));
         }, 0, 20, TimeUnit.HOURS);
+
 
     }
 

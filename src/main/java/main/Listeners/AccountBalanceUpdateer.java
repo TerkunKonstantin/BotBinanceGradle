@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,13 +42,26 @@ public class AccountBalanceUpdateer {
      */
     private Map<String, AssetBalance> accountBalanceCache;
 
+    private Closeable closeable;
+    private ScheduledFuture<?> scheduledFuture;
+
     public AccountBalanceUpdateer(DataInitialization dataInitialization) {
-        this.pairMap = dataInitialization.pairMap;
+        this.pairMap = dataInitialization.pairFabric.pricePairHashMap;
         this.apiRestClient = dataInitialization.binanceApiRestClient;
         this.apiWebSocketClient = dataInitialization.binanceApiWebSocketClient;
         this.apiAsyncRestClient = dataInitialization.apiAsyncRestClient;
         this.listenKey = initializeAssetBalanceCacheAndStreamSession();
         startAccountBalanceEventStreaming(listenKey);
+    }
+
+    public void stopUpdater(){
+        try {
+            closeable.close();
+            scheduledFuture.cancel(true);
+        } catch (Exception e) {
+            log.error(e.getStackTrace());
+            e.printStackTrace();
+        }
     }
 
 
@@ -79,7 +93,7 @@ public class AccountBalanceUpdateer {
 
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         AtomicReference<Closeable> atomicReference = new AtomicReference<>();
-        service.scheduleAtFixedRate(() -> {
+        scheduledFuture = service.scheduleAtFixedRate(() -> {
             try {
                 Closeable webSocket = atomicReference.get();
                 if (Objects.nonNull(webSocket)) {
@@ -88,8 +102,8 @@ public class AccountBalanceUpdateer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            atomicReference.set(
-                    apiWebSocketClient.onUserDataUpdateEvent(listenKey, response -> {
+             atomicReference.set(
+                    closeable = apiWebSocketClient.onUserDataUpdateEvent(listenKey, response -> {
                         if (response.getEventType() == ACCOUNT_UPDATE) {
                         for (AssetBalance assetBalance : response.getAccountUpdateEvent().getBalances()) {
                             accountBalanceCache.put(assetBalance.getAsset(), assetBalance);

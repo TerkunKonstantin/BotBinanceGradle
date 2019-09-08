@@ -6,11 +6,9 @@ import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.BinanceApiWebSocketClient;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.general.SymbolInfo;
-import main.Pair.CurrencyPair;
 import main.Pair.PairFabric;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class DataInitialization {
@@ -19,16 +17,15 @@ public class DataInitialization {
     public BinanceApiRestClient binanceApiRestClient = binanceApiClientFactory.newRestClient();
     public BinanceApiWebSocketClient binanceApiWebSocketClient = BinanceApiClientFactory.newInstance().newWebSocketClient();
     public BinanceApiAsyncRestClient apiAsyncRestClient = binanceApiClientFactory.newAsyncRestClient();
-    public Map<String, CurrencyPair> pairMap;
+    public PairFabric pairFabric;
 
     DataInitialization() {
 
         List<SymbolInfo> symbolInfoListBTC = takeCorrectPairs();
 
         // Фабрикой создаю для них сущности и сразу подписываю их на изменения цены, объема, оредеров
-        PairFabric pairFabric = new PairFabric(symbolInfoListBTC, binanceApiWebSocketClient);
-        pairMap = pairFabric.getCurrencyPairList();
-
+        pairFabric = new PairFabric(symbolInfoListBTC);
+        pairFabric.addPairListeners();
     }
 
     private List<SymbolInfo> takeCorrectPairs() {

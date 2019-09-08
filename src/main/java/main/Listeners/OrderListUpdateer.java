@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,6 +35,8 @@ public class OrderListUpdateer {
     private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
     private final BinanceApiRestClient apiRestClient = factory.newRestClient();
     private Map<String, CurrencyPair> pricePairHashMap;
+    public Closeable closeable;
+    public ScheduledFuture<?> scheduledFuture;
 
     public OrderListUpdateer(Map<String, CurrencyPair> pricePairHashMap) {
         this.pricePairHashMap = pricePairHashMap;
@@ -50,7 +53,7 @@ public class OrderListUpdateer {
 
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         AtomicReference<Closeable> atomicReference = new AtomicReference<>();
-        service.scheduleAtFixedRate(() -> {
+        scheduledFuture = service.scheduleAtFixedRate(() -> {
             try {
                 Closeable webSocket = atomicReference.get();
                 if (Objects.nonNull(webSocket)) {
@@ -59,36 +62,38 @@ public class OrderListUpdateer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            atomicReference.set(
-                    webSocketClient.onUserDataUpdateEvent(apiRestClient.startUserDataStream(), response -> {
-                        try {
-                            if (response.getEventType() == ORDER_TRADE_UPDATE) {
-                                List<Order> orderListForDelete = new ArrayList<>();
-                                OrderTradeUpdateEvent orderTradeUpdateEvent = response.getOrderTradeUpdateEvent();
-                                Order newOrder = createOrder(orderTradeUpdateEvent);
-                                CurrencyPair currencyPair = pricePairHashMap.get(orderTradeUpdateEvent.getSymbol());
+
+            closeable = webSocketClient.onUserDataUpdateEvent(apiRestClient.startUserDataStream(), response -> {
+                try {
+                    if (response.getEventType() == ORDER_TRADE_UPDATE) {
+                        List<Order> orderListForDelete = new ArrayList<>();
+                        OrderTradeUpdateEvent orderTradeUpdateEvent = response.getOrderTradeUpdateEvent();
+                        Order newOrder = createOrder(orderTradeUpdateEvent);
+                        CurrencyPair currencyPair = pricePairHashMap.get(orderTradeUpdateEvent.getSymbol());
 
 
-                                if (orderTradeUpdateEvent.getOrderStatus().toString().equals("CANCELED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("REJECTED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("FILLED")) {
-                                    log.info(orderTradeUpdateEvent);
-                                    for (Order order : currencyPair.orderList) {
-                                        if (order.getOrderId().equals(newOrder.getOrderId())) {
-                                            // TODO реализовать удаление ордера нормально, не хочу формировать список, а после уже его удалять из списка оредров пары
-                                            orderListForDelete.add(order);
-                                        }
-                                    }
-
-                                    currencyPair.orderList.removeAll(orderListForDelete);
-                                } else
-                                    currencyPair.orderList.add(newOrder);
-
-
+                        if (orderTradeUpdateEvent.getOrderStatus().toString().equals("CANCELED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("REJECTED") || orderTradeUpdateEvent.getOrderStatus().toString().equals("FILLED")) {
+                            log.info(orderTradeUpdateEvent);
+                            for (Order order : currencyPair.orderList) {
+                                if (order.getOrderId().equals(newOrder.getOrderId())) {
+                                    // TODO реализовать удаление ордера нормально, не хочу формировать список, а после уже его удалять из списка оредров пары
+                                    orderListForDelete.add(order);
+                                }
                             }
-                        } catch (Exception e){
-                            log.error(e.getStackTrace());
-                            e.printStackTrace();
-                        }
-                    }));
+
+                            currencyPair.orderList.removeAll(orderListForDelete);
+                        } else
+                            currencyPair.orderList.add(newOrder);
+
+
+                    }
+                } catch (Exception e){
+                    log.error(e.getStackTrace());
+                    e.printStackTrace();
+                }
+            });
+
+            atomicReference.set(closeable);
         }, 0, 10, TimeUnit.MINUTES);
 
 

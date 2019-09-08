@@ -4,9 +4,7 @@ import com.binance.api.client.domain.OrderSide;
 import com.binance.api.client.domain.account.Order;
 import com.binance.api.client.domain.market.OrderBook;
 import com.binance.api.client.domain.market.OrderBookEntry;
-import main.Main;
 import main.Pair.CurrencyPair;
-import org.apache.log4j.Logger;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
@@ -15,12 +13,11 @@ import java.util.stream.Collectors;
 
 public class DepthCacheUpdateer extends AbstractStreamUpdateer {
 
-    private long lastUpdateId;
     private static final String BIDS = "BIDS";
     private static final String ASKS = "ASKS";
-
-
+    private long lastUpdateId;
     private Map<String, NavigableMap<BigDecimal, BigDecimal>> depthCache;
+    public Closeable closeable;
 
     public DepthCacheUpdateer(String symbol, CurrencyPair currencyPair) {
         super(symbol, currencyPair);
@@ -52,7 +49,7 @@ public class DepthCacheUpdateer extends AbstractStreamUpdateer {
 
     @Override
     public Closeable getCloseable(String symbol) {
-        return webSocketClient.onDepthEvent(symbol.toLowerCase(), response -> {
+        closeable = webSocketClient.onDepthEvent(symbol.toLowerCase(), response -> {
             if (response.getFinalUpdateId() > lastUpdateId) {
                 lastUpdateId = response.getFinalUpdateId();
                 updateOrderBook(getAsks(), response.getAsks());
@@ -65,11 +62,11 @@ public class DepthCacheUpdateer extends AbstractStreamUpdateer {
                         .filter(e -> e.getSide() == OrderSide.BUY)
                         .collect(Collectors.toList());
                 if (!buyList.isEmpty())
-                currencyPair.checkOrderList(buyList);
+                    currencyPair.checkOrderList(buyList);
 
             }
         });
-
+        return closeable;
     }
 
     private void updateOrderBook(NavigableMap<BigDecimal, BigDecimal> lastOrderBookEntries, List<OrderBookEntry> orderBookDeltas) {

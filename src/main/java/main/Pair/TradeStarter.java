@@ -6,6 +6,7 @@ import com.binance.api.client.domain.TimeInForce;
 import com.binance.api.client.domain.account.NewOrder;
 import com.binance.api.client.domain.account.NewOrderResponse;
 import main.Config;
+import main.DataInitialization;
 import main.Listeners.AccountBalanceUpdateer;
 import org.apache.log4j.Logger;
 
@@ -24,21 +25,31 @@ public class TradeStarter {
     private Map<String, CurrencyPair> pairMap;
     private AccountBalanceUpdateer accountBalanceUpdateer;
     private BinanceApiRestClient binanceApiRestClient = factory.newRestClient();
+    private boolean pingSuccess = true;
+    private DataInitialization dataInitialization;
 
 
-    public TradeStarter(Map<String, CurrencyPair> pairMap, AccountBalanceUpdateer accountBalanceUpdateer) {
+    public TradeStarter(DataInitialization dataInitialization, AccountBalanceUpdateer accountBalanceUpdateer) {
+        this.dataInitialization = dataInitialization;
         this.accountBalanceUpdateer = accountBalanceUpdateer;
-        this.pairMap = pairMap;
+        this.pairMap = dataInitialization.pairFabric.pricePairHashMap;
         //TODO посмотреть зачем я везде таскаю мапу, пары же можно из куренси паир тянуть
 
     }
 
-    // TODO перенести расчет в куренси паир
+
     public void startTrade() {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(() -> {
+
+            pingAndReinitialization();
+
+            if(pingSuccess){
+                System.out.println("Пинг есть");
+            }
+
             int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
-            if (orderBuyCount > 0) {
+            if (orderBuyCount > 0 && pingSuccess) {
                 try {
                     log.info("Появился свободный баланс, проводится ранжирование пар");
                     pairMap.values().forEach(CurrencyPair::calculateRang);
@@ -60,7 +71,6 @@ public class TradeStarter {
                 }
             }
 
-
         }, 30, 10, TimeUnit.SECONDS);
 
     }
@@ -74,6 +84,23 @@ public class TradeStarter {
         BigDecimal amount = Config.getMinRate().divide(priceForBuy, scaleBalance, BigDecimal.ROUND_DOWN);
         return limitBuy(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, amount.toPlainString(), priceForBuy.toPlainString());
 
+    }
+
+    private void pingAndReinitialization(){
+        try {
+            binanceApiRestClient.ping();
+            if (!pingSuccess) {
+                log.info("Реинициализация");
+                dataInitialization.pairFabric.reInitialization();
+                pairMap = dataInitialization.pairFabric.pricePairHashMap;
+                accountBalanceUpdateer.stopUpdater();
+                accountBalanceUpdateer = new AccountBalanceUpdateer(dataInitialization);
+                pingSuccess = true;
+            }
+        } catch (Exception e) {
+            log.info("Пинга нет");
+            pingSuccess = false;
+        }
     }
 
 

@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -30,6 +31,8 @@ public class TickerUpdateer {
     private final BinanceApiWebSocketClient webSocketClient = factory.newWebSocketClient();
     private final BinanceApiAsyncRestClient asyncRestClient = factory.newAsyncRestClient();
     private Map<String, CurrencyPair> pricePairHashMap;
+    public Closeable closeable;
+    public ScheduledFuture<?> scheduledFuture;
 
     public TickerUpdateer(Map<String, CurrencyPair> pricePairHashMap) {
         this.pricePairHashMap = pricePairHashMap;
@@ -52,7 +55,7 @@ public class TickerUpdateer {
     private void startTickerListener() {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         AtomicReference<Closeable> atomicReference = new AtomicReference<>();
-        service.scheduleAtFixedRate(() -> {
+        scheduledFuture = service.scheduleAtFixedRate(() -> {
             try {
                 Closeable webSocket = atomicReference.get();
                 if (Objects.nonNull(webSocket)) {
@@ -61,34 +64,34 @@ public class TickerUpdateer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            atomicReference.set(
-                    webSocketClient.onAllMarketTickersEvent(response -> {
-                        try {
-                            for (AllMarketTickersEvent allMarketTickersEvent : response) {
-                                String symbol = allMarketTickersEvent.getSymbol();
-                                CurrencyPair currencyPair = pricePairHashMap.get(symbol);
-                                if (currencyPair != null) {
-                                    currencyPair.price = new BigDecimal(allMarketTickersEvent.getCurrentDaysClosePrice());
-                                    currencyPair.hightPrice = new BigDecimal(allMarketTickersEvent.getHighPrice());
-                                    currencyPair.lowPrice = new BigDecimal(allMarketTickersEvent.getLowPrice());
-                                    currencyPair.askPrice = new BigDecimal(allMarketTickersEvent.getBestAskPrice());
-                                    currencyPair.bidPrice = new BigDecimal(allMarketTickersEvent.getBestBidPrice());
+            closeable = webSocketClient.onAllMarketTickersEvent(response -> {
+                try {
+                    for (AllMarketTickersEvent allMarketTickersEvent : response) {
+                        String symbol = allMarketTickersEvent.getSymbol();
+                        CurrencyPair currencyPair = pricePairHashMap.get(symbol);
+                        if (currencyPair != null) {
+                            currencyPair.price = new BigDecimal(allMarketTickersEvent.getCurrentDaysClosePrice());
+                            currencyPair.hightPrice = new BigDecimal(allMarketTickersEvent.getHighPrice());
+                            currencyPair.lowPrice = new BigDecimal(allMarketTickersEvent.getLowPrice());
+                            currencyPair.askPrice = new BigDecimal(allMarketTickersEvent.getBestAskPrice());
+                            currencyPair.bidPrice = new BigDecimal(allMarketTickersEvent.getBestBidPrice());
 
-                                    List<Order> buyList = currencyPair.orderList
-                                            .stream()
-                                            .filter(e -> e.getSide() == OrderSide.BUY)
-                                            .collect(Collectors.toList());
-                                    if (!buyList.isEmpty())
-                                        currencyPair.checkOrderList(buyList);
+                            List<Order> buyList = currencyPair.orderList
+                                    .stream()
+                                    .filter(e -> e.getSide() == OrderSide.BUY)
+                                    .collect(Collectors.toList());
+                            if (!buyList.isEmpty())
+                                currencyPair.checkOrderList(buyList);
 
 
-                                }
-                            }
-                        }catch(Exception e){
-                            log.error(e.getStackTrace());
-                            e.printStackTrace();
                         }
-                    }));
+                    }
+                }catch(Exception e){
+                    log.error(e.getStackTrace());
+                    e.printStackTrace();
+                }
+            });
+            atomicReference.set(closeable);
         }, 0, 10, TimeUnit.MINUTES);
     }
 }
