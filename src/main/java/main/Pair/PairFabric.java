@@ -51,7 +51,7 @@ public class PairFabric {
     }
 
     private void addTickerListener(Map<String, CurrencyPair> pricePairHashMap) {
-       new TickerUpdateer(pricePairHashMap);
+        tickerUpdateer = new TickerUpdateer(pricePairHashMap);
     }
 
 
