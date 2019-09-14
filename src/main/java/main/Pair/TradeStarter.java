@@ -28,7 +28,6 @@ public class TradeStarter {
     private boolean pingSuccess = true;
     private DataInitialization dataInitialization;
 
-
     public TradeStarter(DataInitialization dataInitialization, AccountBalanceUpdateer accountBalanceUpdateer) {
         this.dataInitialization = dataInitialization;
         this.accountBalanceUpdateer = accountBalanceUpdateer;
@@ -37,56 +36,50 @@ public class TradeStarter {
 
     }
 
-
     public void startTrade() {
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleAtFixedRate(() -> {
-
             pingAndReinitialization();
-
-            if(pingSuccess){
-                System.out.println("Пинг есть");
-            }
-
-            int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
-            if (orderBuyCount > 0 && pingSuccess) {
-                try {
-                    log.info("Появился свободный баланс, проводится ранжирование пар");
-                    pairMap.values().forEach(CurrencyPair::calculateRang);
-                    List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
-                    currencyPairList.sort(Comparator.comparingDouble(pair -> pair.rank));
-                    Collections.reverse(currencyPairList);
-
-                    for (CurrencyPair currencyPair : currencyPairList) {
-                        if (currencyPair.isCorrectForSale() && orderBuyCount > 0) {
-                            log.info("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
-                            NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(prepareLimitOrder(currencyPair));
-                            log.info(newOrderResponse);
-                            orderBuyCount--;
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error(e.getStackTrace());
-                    e.printStackTrace();
-                }
-            }
-
+            trade();
         }, 30, 10, TimeUnit.SECONDS);
 
     }
 
     private NewOrder prepareLimitOrder(CurrencyPair currencyPair) {
-
         BigDecimal stepPriceSize = new BigDecimal(currencyPair.symbolInfo.getFilters().get(0).getMinPrice());
         BigDecimal priceForBuy = currencyPair.bidPrice.add(stepPriceSize);
         BigDecimal stepBalanceSize = new BigDecimal(currencyPair.symbolInfo.getFilters().get(2).getStepSize());
         int scaleBalance = stepBalanceSize.stripTrailingZeros().scale();
         BigDecimal amount = Config.getMinRate().divide(priceForBuy, scaleBalance, BigDecimal.ROUND_DOWN);
         return limitBuy(currencyPair.symbolInfo.getSymbol(), TimeInForce.GTC, amount.toPlainString(), priceForBuy.toPlainString());
-
     }
 
-    private void pingAndReinitialization(){
+    private void trade() {
+        int orderBuyCount = accountBalanceUpdateer.getOrderBuyCount();
+        if (orderBuyCount > 0 && pingSuccess) {
+            try {
+                log.info("Появился свободный баланс, проводится ранжирование пар");
+                pairMap.values().forEach(CurrencyPair::calculateRang);
+                List<CurrencyPair> currencyPairList = new ArrayList<>(pairMap.values());
+                currencyPairList.sort(Comparator.comparingDouble(pair -> pair.rank));
+                Collections.reverse(currencyPairList);
+
+                for (CurrencyPair currencyPair : currencyPairList) {
+                    if (currencyPair.isCorrectForSale() && orderBuyCount > 0) {
+                        log.info("  moneta:" + currencyPair.symbolInfo.getSymbol() + " rang: " + currencyPair.rank);
+                        NewOrderResponse newOrderResponse = binanceApiRestClient.newOrder(prepareLimitOrder(currencyPair));
+                        log.info(newOrderResponse);
+                        orderBuyCount--;
+                    }
+                }
+            } catch (Exception e) {
+                log.error(e.getStackTrace());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void pingAndReinitialization() {
         try {
             binanceApiRestClient.ping();
             if (!pingSuccess) {
@@ -102,6 +95,5 @@ public class TradeStarter {
             pingSuccess = false;
         }
     }
-
 
 }

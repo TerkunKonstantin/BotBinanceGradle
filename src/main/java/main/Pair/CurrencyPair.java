@@ -48,9 +48,15 @@ public class CurrencyPair {
      */
     private double calculatePositionIndex() {
 
-        double positionIndexPair = hightPrice.subtract(price)
-                .divide(hightPrice.subtract(lowPrice), BigDecimal.ROUND_HALF_EVEN)
-                .doubleValue();
+        double positionIndexPair;
+        if(hightPrice.equals(lowPrice)){
+            positionIndexPair = 0;
+        } else{
+            positionIndexPair = hightPrice.subtract(price)
+                    .divide(hightPrice.subtract(lowPrice), BigDecimal.ROUND_HALF_EVEN)
+                    .doubleValue();
+        }
+
         positionIndex = positionIndexPair;
         return positionIndexPair;
     }
